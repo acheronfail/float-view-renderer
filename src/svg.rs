@@ -1,6 +1,6 @@
 use sailfish::TemplateSimple;
 
-use crate::input::DataPoint;
+use crate::{cli::Args, input::DataPoint};
 
 fn format_float(value: f32, as_int: bool) -> String {
     if as_int {
@@ -45,7 +45,7 @@ struct SvgTemplate {
     items: Vec<Item>,
 }
 
-pub fn render_svg(data_point: &DataPoint, cell_count: &Option<u8>) -> String {
+pub fn render_svg(data_point: &DataPoint, args: &Args) -> String {
     let voltage_color = "#34d399";
     let current_color = "#67e8f9";
     let speed_color = "#fde68a";
@@ -123,12 +123,12 @@ pub fn render_svg(data_point: &DataPoint, cell_count: &Option<u8>) -> String {
     // battery
 
     items.push(Item::Title("Battery".to_string()));
-    if let Some(cell_count) = cell_count {
+    if let Some(cell_count) = args.cell_count {
         items.push(Item::Datum {
             label: "Voltage (per cell)".to_string(),
             value: format!(
                 "{} V",
-                format_float(data_point.batt_voltage / *cell_count as f32, false)
+                format_float(data_point.batt_voltage / cell_count as f32, false)
             ),
             color: Some(voltage_color.to_string()),
         });

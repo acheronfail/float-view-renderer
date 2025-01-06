@@ -138,9 +138,13 @@ fn parse_float_control<R: Read>(rdr: R) -> Result<Vec<DataPoint>> {
     let mut data: Vec<DataPoint> = vec![];
 
     let mut rdr = csv::Reader::from_reader(rdr);
+    let mut last_record: Option<FloatControlCsv> = None;
     for result in rdr.deserialize() {
         let record: FloatControlCsv = result?;
-        data.push(record.to_data_point(data.last().map(|dp| dp.duration).unwrap_or(0.0)));
+        let prev_time = last_record.map_or(0.0, |r| r.time_seconds);
+        data.push(record.to_data_point(prev_time));
+
+        last_record = Some(record);
     }
 
     let has_battery_temps = data

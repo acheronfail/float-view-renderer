@@ -12,19 +12,19 @@ use resvg::tiny_skia::{Color, Pixmap};
 use usvg::{Transform, Tree};
 
 fn main() -> Result<()> {
-    let args = dbg!(cli::Args::parse()?);
+    let args = cli::Args::parse()?;
 
     let mut opt = usvg::Options::default();
     opt.fontdb_mut().load_system_fonts();
 
-    let data = input::parse(args.input)?;
+    let data = input::parse(&args.input)?;
     if data.is_empty() {
         bail!("No data points found");
     }
 
     // read the first frame to get the size of the pixmap
     let mut pixmap = {
-        let first_point = svg::render_svg(&data[0], &args.cell_count);
+        let first_point = svg::render_svg(&data[0], &args);
         let first_tree = Tree::from_data(first_point.as_bytes(), &opt)?;
 
         let pixmap_size = first_tree
@@ -52,7 +52,7 @@ fn main() -> Result<()> {
         .open(&concat_file_path)?;
 
     for (i, point) in data.iter().enumerate() {
-        let svg_data = svg::render_svg(&point, &args.cell_count);
+        let svg_data = svg::render_svg(&point, &args);
         let tree = Tree::from_data(&svg_data.as_bytes(), &opt)?;
 
         // Render the SVG to the Pixmap
@@ -67,7 +67,11 @@ fn main() -> Result<()> {
         let output_file = format!("frame_{:05}.png", i);
         pixmap.save_png(output_dir.join(&output_file))?;
         writeln!(concat_file, "file '{}'", output_file)?;
-        writeln!(concat_file, "duration {}", point.duration)?;
+        writeln!(
+            concat_file,
+            "duration {}",
+            f32::min(point.duration, args.max_gap_seconds)
+        )?;
 
         // due to a quirk in ffmpeg, we must specify the last frame twice
         if i == data.len() - 1 {

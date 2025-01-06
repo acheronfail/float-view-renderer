@@ -22,12 +22,13 @@ INPUT_FILE:
         - Floaty JSON
 
 OPTIONS:
-    -s, --scale <SCALE>         Scale factor (controls size of the output) [default: 8.0]
-    -r, --rate <FRAME_RATE>     Frame rate of the output video (when unset, a variable frame rate is used)
-    -o, --output <OUTPUT>       Output file name [default: $input_file_name.mov]
-    -c, --cell-count <COUNT>    Number of cells in the battery pack
-    -h, --help                  Print help information
-    -V, --version               Print version information
+    -s, --scale <SCALE>              Scale factor (controls size of the output) [default: 8.0]
+    -r, --rate <FRAME_RATE>          Frame rate of the output video (when unset, a variable frame rate is used)
+    -o, --output <OUTPUT>            Output file name [default: $input_file_name.mov]
+    -c, --cell-count <COUNT>         Number of cells in the battery pack
+    -g, --max-gap-seconds <SECONDS>  Maximum gap between data points (in seconds) [default: 2.0]
+    -h, --help                       Print help information
+    -V, --version                    Print version information
 
 EXAMPLES:
     {bin}                  path/to/float-control.csv
@@ -54,6 +55,7 @@ pub struct Args {
     pub input: String,
     pub output: String,
     pub scale: f32,
+    pub max_gap_seconds: f32,
     pub cell_count: Option<u8>,
     pub rate: Option<f32>,
 }
@@ -64,6 +66,7 @@ impl Args {
 
         let mut input = None;
 
+        let mut max_gap_seconds = None;
         let mut cell_count = None;
         let mut scale = None;
         let mut rate = None;
@@ -77,6 +80,9 @@ impl Args {
                 Short('o') | Long("output") => output = Some(parser.value()?.string()?.into()),
                 Short('c') | Long("cell-count") => {
                     cell_count = Some(parser.value()?.string()?.parse()?)
+                }
+                Short('g') | Long("max-gap-seconds") => {
+                    max_gap_seconds = Some(parser.value()?.string()?.parse()?)
                 }
                 Short('h') | Long("help") => {
                     print_help();
@@ -108,6 +114,7 @@ impl Args {
             input: input.unwrap(),
             scale: scale.unwrap_or(8.0),
             output: output.unwrap_or(String::from("output.mov")),
+            max_gap_seconds: max_gap_seconds.unwrap_or(2.0),
             cell_count,
             rate,
         })
