@@ -6,6 +6,7 @@ use anyhow::{bail, Result};
 use serde_derive::Deserialize;
 
 pub struct DataPoint {
+    pub index: usize,
     pub duration: f32,
 
     pub speed: f32,
@@ -114,8 +115,9 @@ impl FloatControlCsv {
             .unwrap_or(NAN)
     }
 
-    fn to_data_point(&self, prev_time: f32) -> DataPoint {
+    fn to_data_point(&self, prev_time: f32, index: usize) -> DataPoint {
         DataPoint {
+            index,
             duration: self.time_seconds - prev_time,
             speed: self.speed_kmh(),
             duty_cycle: self
@@ -139,11 +141,13 @@ fn parse_float_control<R: Read>(rdr: R) -> Result<Vec<DataPoint>> {
 
     let mut rdr = csv::Reader::from_reader(rdr);
     let mut last_record: Option<FloatControlCsv> = None;
+    let mut i = 0;
     for result in rdr.deserialize() {
         let record: FloatControlCsv = result?;
         let prev_time = last_record.map_or(0.0, |r| r.time_seconds);
-        data.push(record.to_data_point(prev_time));
+        data.push(record.to_data_point(prev_time, i));
 
+        i += 1;
         last_record = Some(record);
     }
 
@@ -215,8 +219,9 @@ struct FloatyLog {
 }
 
 impl FloatyLog {
-    fn to_data_point(&self, start_time: u64) -> DataPoint {
+    fn to_data_point(&self, start_time: u64, index: usize) -> DataPoint {
         DataPoint {
+            index,
             duration: (self.timestamp - start_time) as f32 / 1000.0,
             speed: self.speed.unwrap_or(f64::NAN) as f32,
             duty_cycle: self.duty_cycle.unwrap_or(f64::NAN) as f32,
@@ -257,8 +262,8 @@ fn parse_floaty<R: Read>(rdr: R) -> Result<Vec<DataPoint>> {
 
     let json: FloatyJson = serde_json::from_reader(rdr)?;
 
-    for log in json.logs {
-        data.push(log.to_data_point(json.start_time));
+    for (i, log) in json.logs.iter().enumerate() {
+        data.push(log.to_data_point(json.start_time, i));
     }
 
     Ok(data)
