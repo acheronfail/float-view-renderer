@@ -2,8 +2,10 @@ use std::f32::NAN;
 use std::fs::File;
 use std::io::{BufReader, Read};
 
-use anyhow::{bail, Result};
 use serde_derive::Deserialize;
+
+use crate::bail;
+use crate::err::Result;
 
 pub struct DataPoint {
     pub index: usize,
@@ -105,7 +107,7 @@ struct FloatControlCsv {
     #[serde(rename = "Wh Charged")]
     wh_charged: f32,
     #[serde(rename = "ERPM")]
-    erpm: u32,
+    erpm: i64,
 }
 
 impl FloatControlCsv {
